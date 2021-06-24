@@ -4,16 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon src/index.js --ext js,graphql --exec babel-node",
+    "start": "nodemon src/graphql-basics/index.js --ext js,graphql,json --exec babel-node",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.1",
     "babel-cli": "^6.26.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "graphql-yoga": "^1.16.7",
+    "mongoose": "^5.12.14",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
