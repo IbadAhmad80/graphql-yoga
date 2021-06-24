@@ -1,22 +1,24 @@
-import { mongoose, Schema } from "mongoose";
+import mongoose from "mongoose";
 
 const CommentsSchema = mongoose.Schema({
   id: {
-    type: Schema.Types.ObjectId,
-    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    // required: true,
   },
   text: {
     type: String,
-    require: true,
+    required: [true, "comments text cant be null field"],
   },
 
-  user: {
-    type: Schema.Types.ObjectId,
-    ref: "Users",
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Authors",
+    required: [true, "comment author cant be null field"],
   },
-  posts: {
-    typr: Schema.Types.ObjectId,
+  post: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Posts",
+    required: [true, "comments posts cant be null field"],
   },
 });
 
