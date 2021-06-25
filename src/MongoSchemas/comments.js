@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
 
 const CommentsSchema = mongoose.Schema({
-  id: {
-    type: mongoose.Schema.Types.ObjectId,
-    // required: true,
-  },
   text: {
     type: String,
     required: [true, "comments text cant be null field"],

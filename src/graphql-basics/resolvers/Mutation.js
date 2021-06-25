@@ -149,30 +149,30 @@ const Mutation = {
       //   });
     }
   },
-  createComment(parent, args, { db, pubsub }, info) {
-    const userExists = db.users.some((user) => user.id === args.data.author);
-    const postExists = db.posts.some(
-      (post) => post.id === args.data.post && post.published
-    );
+  async createComment(parent, { data: { author, post, text } }, context, info) {
+    const user = await Authors.findOne({ _id: author });
+    const found_post = await Posts.findOne({ _id: post });
+    if (!user || !found_post) {
+      throw new Error("Unable to find user or post");
+    } else {
+      text = text.toLowerCase();
+      let comment = new Comments({ text, author, post });
+      await comment.save();
+      await Posts.updateOne({ _id: post }, { $push: { comments: comment } });
+      await Authors.updateOne(
+        { _id: author },
+        { $push: { comments: comment } }
+      );
 
-    if (!userExists || !postExists) {
-      throw new Error("Unable to find user and post");
+      return comment;
     }
 
-    const comment = {
-      id: uuidv4(),
-      ...args.data,
-    };
-
-    db.comments.push(comment);
-    pubsub.publish(`comment ${args.data.post}`, {
-      comment: {
-        mutation: "CREATED",
-        data: comment,
-      },
-    });
-
-    return comment;
+    // pubsub.publish(`comment ${args.data.post}`, {
+    //   comment: {
+    //     mutation: "CREATED",
+    //     data: comment,
+    //   },
+    // });
   },
   deleteComment(parent, args, { db, pubsub }, info) {
     const commentIndex = db.comments.findIndex(
