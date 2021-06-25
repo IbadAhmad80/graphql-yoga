@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
 
 const PostsSchema = mongoose.Schema({
-  id: {
-    type: mongoose.Schema.Types.ObjectId,
-    // required: true,
-  },
   title: {
     type: String,
     required: [true, "post title cant be null field"],

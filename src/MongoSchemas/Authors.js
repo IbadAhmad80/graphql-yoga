@@ -1,9 +1,6 @@
 import mongoose from "mongoose";
 
 const AuthorsSchema = mongoose.Schema({
-  id: {
-    type: mongoose.Schema.Types.ObjectId,
-  },
   name: {
     type: String,
     required: [true, "author name cant be null"],
@@ -12,7 +9,7 @@ const AuthorsSchema = mongoose.Schema({
     type: String,
     required: [true, "author email cant be null field"],
   },
-  age: Number,
+  age: { type: Number, default: 0 },
   comments: [
     {
       type: mongoose.Schema.Types.ObjectId,

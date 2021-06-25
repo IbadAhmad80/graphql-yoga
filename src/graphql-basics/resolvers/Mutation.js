@@ -1,28 +1,21 @@
 import uuidv4 from "uuid/v4";
-import { axios } from "axios";
-import "../../MongoSchemas";
+import { Authors, Comments, Posts } from "../../MongoSchemas";
 
 const Mutation = {
-  createUser(parent, args, { db }, info) {
-    const emailTaken = db.users.some((user) => user.email === args.data.email);
-
-    if (emailTaken) {
-      throw new Error("Email taken");
+  async createUser(_, { data: { name, email, age } }, context, info) {
+    const emailCheck = await Authors.findOne({ email: email });
+    if (!emailCheck) {
+      name = name.toLowerCase();
+      if (age) return new Authors({ name, email, age }).save();
+      else return new Authors({ name, email }).save();
+    } else {
+      throw new Error("Email already exist");
     }
-
-    const user = {
-      id: uuidv4(),
-      ...args.data,
-    };
-
-    db.users.push(user);
-
-    return user;
   },
-  deleteUser(parent, args, { db }, info) {
-    const userIndex = db.users.findIndex((user) => user.id === args.id);
+  async deleteUser(parent, { id }, context, info) {
+    const user = await Authors.deleteOne({ _id: id });
 
-    if (userIndex === -1) {
+    if (!user) {
       throw new Error("User not found");
     }
 
@@ -41,58 +34,54 @@ const Mutation = {
 
     return deletedUsers[0];
   },
-  updateUser(parent, args, { db }, info) {
-    const { id, data } = args;
-    const user = db.users.find((user) => user.id === id);
-
+  async updateUser(parent, { id, data }, context, info) {
+    const user = await Authors.findOne({ _id: id });
     if (!user) {
       throw new Error("User not found");
-    }
-
-    if (typeof data.email === "string") {
-      const emailTaken = db.users.some((user) => user.email === data.email);
-
-      if (emailTaken) {
-        throw new Error("Email taken");
+    } else {
+      if (typeof data.email === "string") {
+        //checking if email already does not exist
+        const emailCheck = await Authors.findOne({ email: data.email });
+        if (emailCheck) {
+          throw new Error("Email taken");
+        }
+        //updating email if it is not already taken
+        await Authors.updateOne({ _id: id }, { $set: { email: data.email } });
       }
-
-      user.email = data.email;
+      //updating name
+      typeof data.name === "string" &&
+        (await Authors.updateOne({ _id: id }, { $set: { name: data.name } }));
+      //updating age
+      typeof data.age !== "undefined" &&
+        (await Authors.updateOne({ _id: id }, { $set: { age: data.age } }));
+      return Authors.findOne({ _id: id });
     }
-
-    if (typeof data.name === "string") {
-      user.name = data.name;
-    }
-
-    if (typeof data.age !== "undefined") {
-      user.age = data.age;
-    }
-
-    return user;
   },
-  createPost(parent, args, { db, pubsub }, info) {
-    const userExists = db.users.some((user) => user.id === args.data.author);
-
-    if (!userExists) {
-      throw new Error("User not found");
+  async createPost(
+    parent,
+    { data: { title, body, published, author } },
+    context,
+    info
+  ) {
+    const user = await Authors.findOne({ _id: author });
+    if (!user) {
+      throw new Error("Author not found");
+    } else {
+      title = title.toLowerCase();
+      let posts = new Posts({ title, body, published, author });
+      await posts.save();
+      await Authors.updateOne({ _id: author }, { $push: { posts: posts } });
+      return posts;
     }
 
-    const post = {
-      id: uuidv4(),
-      ...args.data,
-    };
-
-    db.posts.push(post);
-
-    if (args.data.published) {
-      pubsub.publish("post", {
-        post: {
-          mutation: "CREATED",
-          data: post,
-        },
-      });
-    }
-
-    return post;
+    // if (args.data.published) {
+    //   pubsub.publish("post", {
+    //     post: {
+    //       mutation: "CREATED",
+    //       data: post,
+    //     },
+    //   });
+    // }
   },
   deletePost(parent, args, { db, pubsub }, info) {
     const postIndex = db.posts.findIndex((post) => post.id === args.id);
@@ -116,51 +105,49 @@ const Mutation = {
 
     return post;
   },
-  updatePost(parent, args, { db, pubsub }, info) {
-    const { id, data } = args;
-    const post = db.posts.find((post) => post.id === id);
-    const originalPost = { ...post };
-
+  async updatePost(parent, { id, data }, context, info) {
+    const post = await Posts.findOne({ _id: id });
     if (!post) {
       throw new Error("Post not found");
+    } else {
+      //updating title of the post
+      typeof data.title === "string" &&
+        (await Posts.updateOne({ _id: id }, { $set: { title: data.title } }));
+
+      //updating body of post
+      typeof data.body === "string" &&
+        (await Posts.updateOne({ _id: id }, { $set: { body: data.body } }));
+      //updating published status
+      typeof data.published === "boolean" &&
+        (await Posts.updateOne(
+          { _id: id },
+          { $set: { published: data.published } }
+        ));
+      return Posts.findOne({ _id: id });
+
+      //   if (originalPost.published && !post.published) {
+      //     pubsub.publish("post", {
+      //       post: {
+      //         mutation: "DELETED",
+      //         data: originalPost,
+      //       },
+      //     });
+      //   } else if (!originalPost.published && post.published) {
+      //     pubsub.publish("post", {
+      //       post: {
+      //         mutation: "CREATED",
+      //         data: post,
+      //       },
+      //     });
+      //   }
+      // } else if (post.published) {
+      //   pubsub.publish("post", {
+      //     post: {
+      //       mutation: "UPDATED",
+      //       data: post,
+      //     },
+      //   });
     }
-
-    if (typeof data.title === "string") {
-      post.title = data.title;
-    }
-
-    if (typeof data.body === "string") {
-      post.body = data.body;
-    }
-
-    if (typeof data.published === "boolean") {
-      post.published = data.published;
-
-      if (originalPost.published && !post.published) {
-        pubsub.publish("post", {
-          post: {
-            mutation: "DELETED",
-            data: originalPost,
-          },
-        });
-      } else if (!originalPost.published && post.published) {
-        pubsub.publish("post", {
-          post: {
-            mutation: "CREATED",
-            data: post,
-          },
-        });
-      }
-    } else if (post.published) {
-      pubsub.publish("post", {
-        post: {
-          mutation: "UPDATED",
-          data: post,
-        },
-      });
-    }
-
-    return post;
   },
   createComment(parent, args, { db, pubsub }, info) {
     const userExists = db.users.some((user) => user.id === args.data.author);
