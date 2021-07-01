@@ -16,7 +16,7 @@ const Query = {
   },
   async posts(parent, args, context, info) {
     if (!args.query) {
-      return Posts.find({}).populate("author").populate("comments");
+      return Posts.find().populate("author").populate("comments");
     } else {
       const posts = await Posts.find({
         title: args.query.toLowerCase(),

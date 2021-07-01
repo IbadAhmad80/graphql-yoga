@@ -60,28 +60,28 @@ const Mutation = {
   async createPost(
     parent,
     { data: { title, body, published, author } },
-    context,
+    { pubsub },
     info
   ) {
+    let posts;
+
     const user = await Authors.findOne({ _id: author });
     if (!user) {
       throw new Error("Author not found");
     } else {
       title = title.toLowerCase();
-      let posts = new Posts({ title, body, published, author });
+      posts = new Posts({ title, body, published, author });
       await posts.save();
       await Authors.updateOne({ _id: author }, { $push: { posts: posts } });
-      return posts;
     }
 
-    // if (args.data.published) {
-    //   pubsub.publish("post", {
-    //     post: {
-    //       mutation: "CREATED",
-    //       data: post,
-    //     },
-    //   });
-    // }
+    pubsub.publish("post", {
+      post: {
+        mutation: "CREATED",
+        data: posts,
+      },
+    });
+    return posts;
   },
   deletePost(parent, args, { db, pubsub }, info) {
     const postIndex = db.posts.findIndex((post) => post.id === args.id);
