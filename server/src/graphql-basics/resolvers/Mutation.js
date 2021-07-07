@@ -105,7 +105,7 @@ const Mutation = {
 
     return post;
   },
-  async updatePost(parent, { id, data }, context, info) {
+  async updatePost(parent, { id, data }, { pubsub }, info) {
     const post = await Posts.findOne({ _id: id });
     if (!post) {
       throw new Error("Post not found");
@@ -123,6 +123,12 @@ const Mutation = {
           { _id: id },
           { $set: { published: data.published } }
         ));
+      pubsub.publish("post", {
+        post: {
+          mutation: "UPDATED",
+          data: Posts.findOne({ _id: id }),
+        },
+      });
       return Posts.findOne({ _id: id });
 
       //   if (originalPost.published && !post.published) {

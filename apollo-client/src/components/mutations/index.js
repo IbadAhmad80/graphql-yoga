@@ -40,3 +40,17 @@ export const updatePosts = gql`
     }
   }
 `;
+
+export const updatePostSubscription = gql`
+  subscription onUpdatedPost {
+    post {
+      mutation
+      data {
+        id
+        title
+        body
+        published
+      }
+    }
+  }
+`;

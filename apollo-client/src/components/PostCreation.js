@@ -1,7 +1,7 @@
 import React from "react";
 import { useMutation } from "@apollo/client";
 import { addPost } from "./mutations";
-import { useHistory, useLocation } from "react-router-dom";
+import { Link, useHistory, useLocation } from "react-router-dom";
 
 function PostCreation() {
   const history = useHistory();
@@ -44,14 +44,9 @@ function PostCreation() {
 
         <button type="submit">Create</button>
       </form>
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          history.push("./");
-        }}
-      >
-        See Posts
-      </button>
+      <Link to="/">
+        <button>See Posts</button>
+      </Link>
     </div>
   );
 }
